@@ -1,7 +1,7 @@
 import axios from 'axios'
 
 const API = axios.create({
-  baseURL: 'http://localhost:5000/api'
+  baseURL: 'https://campusmart-backend-vv70.onrender.com/api'
 })
 
 API.interceptors.request.use((config) => {
@@ -11,7 +11,7 @@ API.interceptors.request.use((config) => {
       config.headers.Authorization = `Bearer ${user.token}`
     }
   } catch (error) {
-    console.log('No user in localStorage')
+    console.log('No user in localStorage', error)
   }
   return config
 })
