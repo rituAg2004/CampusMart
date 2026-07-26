@@ -37,6 +37,7 @@ A full-stack AI-powered marketplace for college students to buy and sell books, 
 
 ## 📁 Project Structure
 
+```
 campusmart/
 ├── client/          # React Frontend
 │   ├── src/
@@ -48,6 +49,7 @@ campusmart/
     ├── routes/      # API Routes (Auth, Products, Users, AI, Messages)
     ├── middleware/  # Auth & Upload Middleware
     └── config/      # DB & Cloudinary Config
+```
 
 ## ⚙️ Setup & Installation
 
@@ -60,30 +62,32 @@ campusmart/
 
 ### Backend Setup
 
-cd server
-npm install
+1. Navigate to server folder and install dependencies:
+   `cd server`
+   `npm install`
 
-Create `.env` file in `server` folder:
+2. Create `.env` file in `server` folder:
+   - PORT=5000
+   - MONGO_URI=your_mongodb_uri
+   - JWT_SECRET=your_jwt_secret
+   - CLOUDINARY_CLOUD_NAME=your_cloud_name
+   - CLOUDINARY_API_KEY=your_api_key
+   - CLOUDINARY_API_SECRET=your_api_secret
+   - EMAIL_USER=your_gmail_id@gmail.com
+   - EMAIL_PASS=your_16_digit_app_password
+   - GEMINI_API_KEY=your_gemini_api_key
 
-PORT=5000
-MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_jwt_secret
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-EMAIL_USER=your_gmail_id@gmail.com
-EMAIL_PASS=your_16_digit_app_password
-GEMINI_API_KEY=your_gemini_api_key
-
-Run server:
-
-npm run dev
+3. Run server:
+   `npm run dev`
 
 ### Frontend Setup
 
-cd client
-npm install
-npm run dev
+1. Navigate to client folder and install dependencies:
+   `cd client`
+   `npm install`
+
+2. Run client:
+   `npm run dev`
 
 ## 🌐 API Endpoints
 
