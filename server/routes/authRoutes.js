@@ -2,27 +2,12 @@ const express = require('express')
 const router = express.Router()
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer')
 const User = require('../models/User')
+const transporter = require('../config/nodemailer')
 
-// Stores
 const pendingUsers = new Map()
 const resetOTPs = new Map()
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  host: 'smtp.gmail.com',
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-})
-
-// -------------------------------------------------------------
-// REGISTER FLOW
-// -------------------------------------------------------------
 router.post('/send-register-otp', async (req, res) => {
   try {
     const { name, email, password, college } = req.body
@@ -43,7 +28,7 @@ router.post('/send-register-otp', async (req, res) => {
     pendingUsers.set(normalizedEmail, {
       otp,
       userData: { name, email: normalizedEmail, password, college },
-      expiresAt: Date.now() + 10 * 60 * 1000 // 10 mins
+      expiresAt: Date.now() + 10 * 60 * 1000
     })
 
     const mailOptions = {
@@ -129,9 +114,6 @@ router.post('/verify-register-otp', async (req, res) => {
   }
 })
 
-// -------------------------------------------------------------
-// LOGIN FLOW
-// -------------------------------------------------------------
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
@@ -172,9 +154,6 @@ router.post('/login', async (req, res) => {
   }
 })
 
-// -------------------------------------------------------------
-// FORGOT PASSWORD FLOW
-// -------------------------------------------------------------
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body
@@ -194,7 +173,7 @@ router.post('/forgot-password', async (req, res) => {
 
     resetOTPs.set(normalizedEmail, {
       otp,
-      expiresAt: Date.now() + 10 * 60 * 1000 // 10 mins
+      expiresAt: Date.now() + 10 * 60 * 1000
     })
 
     const mailOptions = {
