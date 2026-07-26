@@ -37,7 +37,6 @@ A full-stack AI-powered marketplace for college students to buy and sell books, 
 
 ## 📁 Project Structure
 
-```text
 campusmart/
 ├── client/          # React Frontend
 │   ├── src/
@@ -49,3 +48,69 @@ campusmart/
     ├── routes/      # API Routes (Auth, Products, Users, AI, Messages)
     ├── middleware/  # Auth & Upload Middleware
     └── config/      # DB & Cloudinary Config
+
+## ⚙️ Setup & Installation
+
+### Prerequisites
+- Node.js v18+
+- MongoDB Atlas account
+- Cloudinary account
+- Gmail App Password (for Nodemailer OTP sending)
+- Google Gemini API Key
+
+### Backend Setup
+
+cd server
+npm install
+
+Create `.env` file in `server` folder:
+
+PORT=5000
+MONGO_URI=your_mongodb_uri
+JWT_SECRET=your_jwt_secret
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+EMAIL_USER=your_gmail_id@gmail.com
+EMAIL_PASS=your_16_digit_app_password
+GEMINI_API_KEY=your_gemini_api_key
+
+Run server:
+
+npm run dev
+
+### Frontend Setup
+
+cd client
+npm install
+npm run dev
+
+## 🌐 API Endpoints
+
+| Category | Method | Endpoint | Description |
+|---|---|---|---|
+| **Auth** | POST | /api/auth/send-register-otp | Send registration OTP via email |
+| **Auth** | POST | /api/auth/verify-register-otp | Verify OTP & complete registration |
+| **Auth** | POST | /api/auth/login | Authenticate user & issue JWT token |
+| **Auth** | POST | /api/auth/forgot-password | Send password reset OTP |
+| **Auth** | POST | /api/auth/reset-password | Verify reset OTP & update password |
+| **Products** | GET | /api/products | Get all active product listings |
+| **Products** | GET | /api/products/:id | Get single product details |
+| **Products** | POST | /api/products | Add new product (with Cloudinary image upload) |
+| **Products** | PUT | /api/products/:id | Update product details |
+| **Products** | PATCH | /api/products/:id/sold | Mark product status as sold |
+| **Products** | DELETE | /api/products/:id | Delete product listing |
+| **Users** | GET | /api/users/profile | Get current logged-in user profile |
+| **Users** | PUT | /api/users/profile | Update user profile details |
+| **Users** | GET | /api/users/my-listings | Get products listed by current user |
+| **Messages** | POST | /api/messages | Send in-app message to seller/buyer |
+| **Messages** | GET | /api/messages/conversations | Get all active chat threads |
+| **Messages** | GET | /api/messages/:conversationId | Get message history of a chat thread |
+| **AI** | POST | /api/ai/describe | Generate product description using Gemini AI |
+| **AI** | POST | /api/ai/price | Get fair price recommendations using Gemini AI |
+
+## 👨‍💻 Developed By
+
+**Ritu Agarwal**  
+**College:** Madan Mohan Malaviya University of Technology, Gorakhpur  
+**Branch:** Computer Science and Engineering
