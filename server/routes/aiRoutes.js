@@ -1,151 +1,50 @@
 const express = require('express')
 const router = express.Router()
-const bcrypt = require('bcryptjs')
-const jwt = require('jsonwebtoken')
-const nodemailer = require('nodemailer')
-const User = require('../models/User')
+const { protect } = require('../middleware/authMiddleware')
+const { GoogleGenAI } = require('@google/genai')
 
-const pendingUsers = {}
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
+router.post('/describe', protect, async (req, res) => {
+  try {
+    const { productName, category, condition } = req.body
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `You are a helpful assistant for a college student marketplace in India. Write a short, honest and compelling product description in 2-3 sentences (max 60 words) for selling this product. Product: ${productName}, Category: ${category}, Condition: ${condition}. Only return the description, nothing else.`,
+    })
+
+    res.status(200).json({ description: response.text })
+
+  } catch (error) {
+    console.error("Gemini AI Description Error:", error)
+    res.status(500).json({ message: "Failed to generate description: " + error.message })
   }
 })
 
-router.post('/send-register-otp', async (req, res) => {
+router.post('/price', protect, async (req, res) => {
   try {
-    const { name, email, password, college } = req.body
+    const { productName, category, condition } = req.body
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' })
-    }
-
-    const userExists = await User.findOne({ email })
-    if (userExists) {
-      return res.status(400).json({ message: 'Email already registered' })
-    }
-
-    const otp = Math.floor(100000 + Math.random() * 900000).toString()
-
-    pendingUsers[email] = {
-      otp,
-      userData: { name, email, password, college },
-      expiresAt: Date.now() + 10 * 60 * 1000 
-    }
-
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'CampusMart - Verify Your Email Address',
-      html: `
-        <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Welcome to CampusMart! 🎓</h2>
-          <p>Your OTP for email verification is:</p>
-          <h1 style="color: #4F46E5; letter-spacing: 4px;">${otp}</h1>
-          <p>This code is valid for 10 minutes.</p>
-        </div>
-      `
-    }
-
-    await transporter.sendMail(mailOptions)
-
-    res.status(200).json({ message: 'OTP sent to your email for verification!' })
-
-  } catch (error) {
-    res.status(500).json({ message: 'Failed to send OTP: ' + error.message })
-  }
-})
-
-
-router.post('/verify-register-otp', async (req, res) => {
-  try {
-    const { email, otp } = req.body
-
-    const pending = pendingUsers[email]
-
-    if (!pending) {
-      return res.status(400).json({ message: 'No registration request found or OTP expired.' })
-    }
-
-    if (Date.now() > pending.expiresAt) {
-      delete pendingUsers[email]
-      return res.status(400).json({ message: 'OTP has expired. Please try again.' })
-    }
-
-    if (pending.otp !== otp) {
-      return res.status(400).json({ message: 'Invalid OTP code' })
-    }
-
-    const { name, password, college } = pending.userData
-
-    const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(password, salt)
-
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-      college
+    const response = await ai.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: `You are a pricing expert for a college second-hand marketplace in India. Suggest a fair resale price range in INR for this product. Product: ${productName}, Category: ${category}, Condition: ${condition}. Return ONLY a valid JSON object like this: {"min": 100, "max": 300, "reason": "one line reason"}. Nothing else, no markdown formatting, no extra text.`,
     })
 
-    delete pendingUsers[email]
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    )
-
-    res.status(201).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      college: user.college,
-      avatar: user.avatar,
-      token,
-      message: 'Email verified and registration successful!'
-    })
-
-  } catch (error) {
-    res.status(500).json({ message: error.message })
-  }
-})
-
-router.post('/login', async (req, res) => {
-  try {
-    const { email, password } = req.body
-
-    const user = await User.findOne({ email })
-    if (!user) {
-      return res.status(400).json({ message: 'Invalid email or password' })
+    const text = response.text.trim()
+    
+    const jsonMatch = text.match(/\{[\s\S]*\}/)
+    
+    if (!jsonMatch) {
+      throw new Error("Invalid JSON response from AI")
     }
 
-    const isMatch = await bcrypt.compare(password, user.password)
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Invalid email or password' })
-    }
-
-    const token = jwt.sign(
-      { id: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: '30d' }
-    )
-
-    res.status(200).json({
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      college: user.college,
-      avatar: user.avatar,
-      token
-    })
+    const parsed = JSON.parse(jsonMatch[0])
+    res.status(200).json(parsed)
 
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    console.error("Gemini AI Price Error:", error)
+    res.status(500).json({ message: "Failed to suggest price: " + error.message })
   }
 })
 

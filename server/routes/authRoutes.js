@@ -5,8 +5,9 @@ const jwt = require('jsonwebtoken')
 const nodemailer = require('nodemailer')
 const User = require('../models/User')
 
-const pendingUsers = {}
-const resetOTPs = {}
+// Stores
+const pendingUsers = new Map()
+const resetOTPs = new Map()
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
@@ -30,26 +31,28 @@ router.post('/send-register-otp', async (req, res) => {
       return res.status(400).json({ message: 'All fields are required' })
     }
 
-    const userExists = await User.findOne({ email })
+    const normalizedEmail = email.toLowerCase().trim()
+
+    const userExists = await User.findOne({ email: normalizedEmail })
     if (userExists) {
       return res.status(400).json({ message: 'Email already registered' })
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
-    pendingUsers[email] = {
+    pendingUsers.set(normalizedEmail, {
       otp,
-      userData: { name, email, password, college },
-      expiresAt: Date.now() + 10 * 60 * 1000 
-    }
+      userData: { name, email: normalizedEmail, password, college },
+      expiresAt: Date.now() + 10 * 60 * 1000 // 10 mins
+    })
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
+      from: `"CampusMart" <${process.env.EMAIL_USER}>`,
+      to: normalizedEmail,
       subject: 'CampusMart - Verify Your Email Address',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Welcome to CampusMart! 🎓</h2>
+          <h2 style="color: #4F46E5;">Welcome to CampusMart! 🎓</h2>
           <p>Your OTP for email verification is:</p>
           <h1 style="color: #4F46E5; letter-spacing: 4px;">${otp}</h1>
           <p>This code is valid for 10 minutes.</p>
@@ -62,6 +65,7 @@ router.post('/send-register-otp', async (req, res) => {
     res.status(200).json({ message: 'OTP sent to your email for verification!' })
 
   } catch (error) {
+    console.error("Register OTP Error:", error)
     res.status(500).json({ message: 'Failed to send OTP: ' + error.message })
   }
 })
@@ -70,18 +74,23 @@ router.post('/verify-register-otp', async (req, res) => {
   try {
     const { email, otp } = req.body
 
-    const pending = pendingUsers[email]
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' })
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
+    const pending = pendingUsers.get(normalizedEmail)
 
     if (!pending) {
       return res.status(400).json({ message: 'No registration request found or OTP expired.' })
     }
 
     if (Date.now() > pending.expiresAt) {
-      delete pendingUsers[email]
+      pendingUsers.delete(normalizedEmail)
       return res.status(400).json({ message: 'OTP has expired. Please try again.' })
     }
 
-    if (pending.otp !== otp) {
+    if (pending.otp !== otp.toString().trim()) {
       return res.status(400).json({ message: 'Invalid OTP code' })
     }
 
@@ -92,12 +101,12 @@ router.post('/verify-register-otp', async (req, res) => {
 
     const user = await User.create({
       name,
-      email,
+      email: normalizedEmail,
       password: hashedPassword,
       college
     })
 
-    delete pendingUsers[email]
+    pendingUsers.delete(normalizedEmail)
 
     const token = jwt.sign(
       { id: user._id },
@@ -127,7 +136,13 @@ router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body
 
-    const user = await User.findOne({ email })
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Please provide email and password' })
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
+
+    const user = await User.findOne({ email: normalizedEmail })
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' })
     }
@@ -160,31 +175,35 @@ router.post('/login', async (req, res) => {
 // -------------------------------------------------------------
 // FORGOT PASSWORD FLOW
 // -------------------------------------------------------------
-
-// 1. Send OTP for Forgot Password
 router.post('/forgot-password', async (req, res) => {
   try {
     const { email } = req.body
 
-    const user = await User.findOne({ email })
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' })
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
+
+    const user = await User.findOne({ email: normalizedEmail })
     if (!user) {
       return res.status(404).json({ message: 'User with this email does not exist' })
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
 
-    resetOTPs[email] = {
+    resetOTPs.set(normalizedEmail, {
       otp,
       expiresAt: Date.now() + 10 * 60 * 1000 // 10 mins
-    }
+    })
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
+      from: `"CampusMart" <${process.env.EMAIL_USER}>`,
+      to: normalizedEmail,
       subject: 'CampusMart - Password Reset OTP',
       html: `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
-          <h2>Password Reset Request 🔐</h2>
+          <h2 style="color: #4F46E5;">Password Reset Request 🔐</h2>
           <p>Your OTP to reset your CampusMart password is:</p>
           <h1 style="color: #4F46E5; letter-spacing: 4px;">${otp}</h1>
           <p>This OTP is valid for 10 minutes.</p>
@@ -197,37 +216,41 @@ router.post('/forgot-password', async (req, res) => {
     res.status(200).json({ message: 'Password reset OTP sent to your email!' })
 
   } catch (error) {
+    console.error("Forgot Password Error:", error)
     res.status(500).json({ message: 'Failed to send OTP: ' + error.message })
   }
 })
 
-// 2. Verify OTP and Update Password
 router.post('/reset-password', async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body
 
-    const record = resetOTPs[email]
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'All fields are required' })
+    }
+
+    const normalizedEmail = email.toLowerCase().trim()
+    const record = resetOTPs.get(normalizedEmail)
 
     if (!record) {
       return res.status(400).json({ message: 'No password reset request found' })
     }
 
     if (Date.now() > record.expiresAt) {
-      delete resetOTPs[email]
+      resetOTPs.delete(normalizedEmail)
       return res.status(400).json({ message: 'OTP has expired. Please try again.' })
     }
 
-    if (record.otp !== otp) {
+    if (record.otp !== otp.toString().trim()) {
       return res.status(400).json({ message: 'Invalid OTP code' })
     }
 
-    // Hash new password and save
     const salt = await bcrypt.genSalt(10)
     const hashedPassword = await bcrypt.hash(newPassword, salt)
 
-    await User.findOneAndUpdate({ email }, { password: hashedPassword })
+    await User.findOneAndUpdate({ email: normalizedEmail }, { password: hashedPassword })
 
-    delete resetOTPs[email]
+    resetOTPs.delete(normalizedEmail)
 
     res.status(200).json({ message: 'Password updated successfully! You can now login.' })
 
