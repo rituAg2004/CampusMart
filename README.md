@@ -1,12 +1,12 @@
 # 🎓 CampusMart — College Marketplace
 
-A full-stack AI-powered marketplace for college students to buy and sell books, notes, gadgets, and more within their campus. Built with MERN stack, LLaMA 3.2 AI, and email-verified OTP security.
+A full-stack AI-powered marketplace for college students to buy and sell books, notes, gadgets, and more within their campus. Built with MERN stack, Google Gemini AI, and email-verified OTP security.
 
 ## 🚀 Features
 
 - 🔐 User Authentication & Verification — Register, Login, Email OTP Verification & Forgot Password OTP via Nodemailer
 - 📦 Product Listings — Buy & Sell college items easily
-- 🤖 AI Description Generator — LLaMA 3.2 powered via Ollama
+- 🤖 AI Description Generator — Google Gemini 2.5 Flash powered
 - 💰 AI Price Suggester — Fair price recommendations based on item condition & market baseline
 - 💬 In-App Messaging — Direct buyer-seller chat
 - 📬 Inbox — All active conversations in one place
@@ -33,7 +33,7 @@ A full-stack AI-powered marketplace for college students to buy and sell books, 
 - Multer
 
 ### AI Layer
-- LLaMA 3.2 via Ollama (Local, Free!) — Powers both Description & Price Suggestion
+- Google Gemini API (`@google/genai`) — Powers both Description & Price Suggestion
 
 ## 📁 Project Structure
 
@@ -56,7 +56,7 @@ campusmart/
 - MongoDB Atlas account
 - Cloudinary account
 - Gmail App Password (for Nodemailer OTP sending)
-- Ollama installed with LLaMA 3.2
+- Google Gemini API Key
 
 ### Backend Setup
 
@@ -73,6 +73,7 @@ CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 EMAIL_USER=your_gmail_id@gmail.com
 EMAIL_PASS=your_16_digit_app_password
+GEMINI_API_KEY=your_gemini_api_key
 
 Run server:
 
@@ -83,11 +84,6 @@ npm run dev
 cd client
 npm install
 npm run dev
-
-### AI Setup
-
-ollama pull llama3.2
-ollama run llama3.2
 
 ## 🌐 API Endpoints
 
@@ -110,8 +106,8 @@ ollama run llama3.2
 | Messages | POST | /api/messages | Send in-app message to seller/buyer |
 | Messages | GET | /api/messages/conversations | Get all active chat threads |
 | Messages | GET | /api/messages/:conversationId | Get message history of a chat thread |
-| AI | POST | /api/ai/describe | Generate product description using LLaMA 3.2 |
-| AI | POST | /api/ai/price | Get fair price recommendations using LLaMA 3.2 |
+| AI | POST | /api/ai/describe | Generate product description using Gemini AI |
+| AI | POST | /api/ai/price | Get fair price recommendations using Gemini AI |
 
 ## 👨‍💻 Developed By
 
