@@ -2,7 +2,9 @@ require('dotenv').config();
 const nodemailer = require('nodemailer');
 
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // port 465 ke liye true hona chahiye
   auth: {
     type: 'OAuth2',
     user: process.env.EMAIL_USER,
@@ -10,6 +12,10 @@ const transporter = nodemailer.createTransport({
     clientSecret: process.env.CLIENT_SECRET,
     refreshToken: process.env.REFRESH_TOKEN,
   },
+  tls: {
+    // Yeh Render jaise cloud servers par SSL/TLS errors aur timeouts ko rokta hai
+    rejectUnauthorized: false 
+  }
 });
 
 // Verify the connection configuration
