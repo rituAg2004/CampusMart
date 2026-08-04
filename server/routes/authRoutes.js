@@ -3,7 +3,7 @@ const router = express.Router()
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/User')
-const resend = require('../config/nodemailer')
+const transporter = require('../config/nodemailer')
 
 const pendingUsers = new Map()
 const resetOTPs = new Map()
@@ -17,6 +17,9 @@ router.post('/send-register-otp', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
+    
+    // 👇 Added Console Log for Debugging
+    console.log("👉 Frontend se Register ke liye yeh email aaya hai:", normalizedEmail)
 
     const userExists = await User.findOne({ email: normalizedEmail })
     if (userExists) {
@@ -31,8 +34,8 @@ router.post('/send-register-otp', async (req, res) => {
       expiresAt: Date.now() + 10 * 60 * 1000
     })
 
-    await resend.emails.send({
-      from: 'CampusMart <onboarding@resend.dev>',
+    const mailOptions = {
+      from: `"CampusMart" <${process.env.EMAIL_USER}>`,
       to: normalizedEmail,
       subject: 'CampusMart - Verify Your Email Address',
       html: `
@@ -43,7 +46,10 @@ router.post('/send-register-otp', async (req, res) => {
           <p>This code is valid for 10 minutes.</p>
         </div>
       `
-    })
+    }
+
+    const info = await transporter.sendMail(mailOptions)
+    console.log("Nodemailer Send Success:", info.response)
 
     res.status(200).json({ message: 'OTP sent to your email for verification!' })
 
@@ -161,6 +167,9 @@ router.post('/forgot-password', async (req, res) => {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
+    
+    // 👇 Added Console Log for Debugging
+    console.log("👉 Frontend se Forgot Password ke liye yeh email aaya hai:", normalizedEmail)
 
     const user = await User.findOne({ email: normalizedEmail })
     if (!user) {
@@ -174,8 +183,8 @@ router.post('/forgot-password', async (req, res) => {
       expiresAt: Date.now() + 10 * 60 * 1000
     })
 
-    await resend.emails.send({
-      from: 'CampusMart <onboarding@resend.dev>',
+    const mailOptions = {
+      from: `"CampusMart" <${process.env.EMAIL_USER}>`,
       to: normalizedEmail,
       subject: 'CampusMart - Password Reset OTP',
       html: `
@@ -186,7 +195,9 @@ router.post('/forgot-password', async (req, res) => {
           <p>This OTP is valid for 10 minutes.</p>
         </div>
       `
-    })
+    }
+
+    await transporter.sendMail(mailOptions)
 
     res.status(200).json({ message: 'Password reset OTP sent to your email!' })
 
