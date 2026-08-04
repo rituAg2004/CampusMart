@@ -4,7 +4,7 @@ const nodemailer = require('nodemailer');
 const transporter = nodemailer.createTransport({
   host: 'smtp.gmail.com',
   port: 465,
-  secure: true, // port 465 ke liye true hona chahiye
+  secure: true,
   auth: {
     type: 'OAuth2',
     user: process.env.EMAIL_USER,
@@ -13,12 +13,12 @@ const transporter = nodemailer.createTransport({
     refreshToken: process.env.REFRESH_TOKEN,
   },
   tls: {
-    // Yeh Render jaise cloud servers par SSL/TLS errors aur timeouts ko rokta hai
     rejectUnauthorized: false 
-  }
+  },
+  // Yeh line server ko sirf IPv4 use karne ke liye force karegi
+  family: 4 
 });
 
-// Verify the connection configuration
 transporter.verify((error, success) => {
   if (error) {
     console.error('Error connecting to email server:', error);
